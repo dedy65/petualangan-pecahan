@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petualangan Pecahan — Game Matematika Seru</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ RESET & DASAR ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --purple:#7C4DFF;
+  --pink:#FF5FA2;
+  --yellow:#FFC93C;
+  --green:#2ED47A;
+  --red:#FF5C5C;
+  --blue:#3DA5FF;
+  --ink:#2B2154;
+}
+html,body{height:100%}
+body{
+  font-family:'Baloo 2','Nunito','Trebuchet MS',system-ui,sans-serif;
+  background:linear-gradient(150deg,#5B3FE8 0%,#8B5CF6 38%,#E85BC8 100%);
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:16px;
+  color:var(--ink);
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+body::before,body::after{
+  content:'';position:fixed;border-radius:50%;filter:blur(70px);opacity:.55;z-index:0;pointer-events:none;
+}
+body::before{width:420px;height:420px;background:#FFD93D;top:-140px;left:-140px}
+body::after{width:480px;height:480px;background:#3DA5FF;bottom:-180px;right:-160px}
+
+.app{position:relative;z-index:1;width:min(780px,100%)}
+.screen{display:none}
+.screen.active{display:block;animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+
+.card{
+  background:rgba(255,255,255,.98);
+  border-radius:30px;
+  padding:26px 24px 28px;
+  box-shadow:0 24px 60px rgba(30,10,80,.35),0 6px 0 rgba(255,255,255,.5) inset;
+  border:4px solid rgba(255,255,255,.9);
+}
+
+/* ============ START SCREEN ============ */
+.start-card{text-align:center}
+.mascot{
+  font-size:64px;line-height:1;margin-bottom:4px;
+  animation:bounce 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 8px 14px rgba(124,77,255,.35));
+}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+.game-title{
+  font-size:clamp(30px,7vw,48px);
+  font-weight:800;
+  letter-spacing:.5px;
+  background:linear-gradient(95deg,#FF5FA2,#FF9A3C,#2ED47A,#3DA5FF,#7C4DFF);
+  background-size:250% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 6s linear infinite;
+}
+@keyframes shine{to{background-position:250% center}}
+.subtitle{color:#6B6396;font-size:17px;margin:6px 0 20px;font-weight:500}
+
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.level-btn{
+  cursor:pointer;border:none;border-radius:22px;padding:18px 10px 16px;
+  font-family:inherit;font-weight:800;font-size:17px;color:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:transform .16s,box-shadow .16s,filter .16s;
+  box-shadow:0 6px 0 rgba(0,0,0,.18);
+}
+.level-btn[data-level="mudah"]{background:linear-gradient(160deg,#38E08A,#1FB86A)}
+.level-btn[data-level="sedang"]{background:linear-gradient(160deg,#5AA9FF,#2B7BE4)}
+.level-btn[data-level="sulit"]{background:linear-gradient(160deg,#FF7BB0,#E93B8B)}
+.level-btn:hover{transform:translateY(-4px);filter:saturate(1.15)}
+.level-btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.lv-emoji{font-size:30px}
+.lv-name{font-size:19px;letter-spacing:.4px}
+.lv-desc{font-size:11.5px;font-weight:600;opacity:.92;line-height:1.25;min-height:30px}
+
+.materi-btn{
+  width:100%;
+  background:linear-gradient(160deg,#FFB84D,#FF8A3C);
+  box-shadow:0 6px 0 #C25E1E;
+  color:#fff;border:none;border-radius:20px;
+  padding:16px;font-family:inherit;font-weight:800;font-size:18px;
+  cursor:pointer;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .15s,box-shadow .15s,filter .15s;
+  letter-spacing:.3px;
+}
+.materi-btn:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.materi-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #C25E1E}
+.materi-btn .mt-emoji{font-size:24px}
+
+.how{
+  background:linear-gradient(160deg,#F3EEFF,#EAF4FF);
+  border-radius:20px;padding:16px 18px;text-align:left;
+  border:2px dashed #C9B8FF;
+}
+.how h3{font-size:16px;color:#6C4DF6;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.how ul{list-style:none;display:grid;gap:6px}
+.how li{font-size:14px;color:#57518A;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+.how li span{flex:0 0 auto}
+
+/* ============ GAME SCREEN ============ */
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.icon-btn{
+  width:44px;height:44px;border-radius:14px;border:none;cursor:pointer;
+  background:rgba(255,255,255,.9);color:#6C4DF6;font-size:19px;font-weight:800;
+  box-shadow:0 5px 0 rgba(0,0,0,.15);transition:transform .15s;font-family:inherit;
+}
+.icon-btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.pill{
+  background:rgba(255,255,255,.95);border-radius:14px;padding:9px 16px;
+  font-weight:800;font-size:17px;color:#4B3FA8;
+  box-shadow:0 5px 0 rgba(0,0,0,.13);
+  display:flex;align-items:center;gap:8px;
+}
+.score-pill{margin-left:auto;color:#B8790B;background:linear-gradient(160deg,#FFF6D6,#FFE9A8)}
+.lives-pill{gap:2px;padding:9px 12px}
+.heart{font-size:17px;transition:transform .3s,filter .3s}
+.heart.off{filter:grayscale(1);opacity:.3;transform:scale(.8)}
+
+.progress{
+  height:14px;background:rgba(255,255,255,.35);border-radius:99px;overflow:hidden;margin-bottom:14px;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.15);
+}
+.progress-fill{
+  height:100%;width:0%;border-radius:99px;
+  background:linear-gradient(90deg,#FFD93D,#2ED47A);
+  transition:width .45s cubic-bezier(.3,1,.4,1);
+  box-shadow:0 0 12px rgba(46,212,122,.8);
+}
+
+.game-card{padding-top:20px}
+.qmeta{
+  display:inline-block;background:#EFE8FF;color:#6C4DF6;font-weight:800;font-size:13px;
+  padding:5px 14px;border-radius:99px;margin-bottom:12px;letter-spacing:.4px;
+}
+.prompt{
+  font-size:clamp(18px,3.6vw,23px);font-weight:800;line-height:1.45;color:#332A66;
+  margin-bottom:16px;
+}
+.prompt b{color:#E93B8B}
+
+.visual:empty{display:none}
+.viz{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.viz-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+.viz-item .cap{font-size:19px;color:#4B3FA8}
+.op-sign{font-size:32px;font-weight:800;color:#8B5CF6}
+.qmark{
+  width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(160deg,#F3EEFF,#E3D8FF);color:#8B5CF6;font-size:34px;font-weight:800;
+  border:3px dashed #B9A5FF;
+}
+.pie{filter:drop-shadow(0 5px 10px rgba(60,20,120,.18))}
+
+.frac{
+  display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+  line-height:1.02;font-weight:800;margin:0 .12em;
+}
+.frac .fn{padding:0 .22em}
+.frac .fd{border-top:.1em solid currentColor;padding:.03em .22em 0}
+
+.options{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+.options.opts-3{grid-template-columns:repeat(3,1fr)}
+.opt{
+  cursor:pointer;font-family:inherit;font-weight:800;font-size:30px;
+  padding:18px 12px;border-radius:20px;border:3px solid #E2DAFF;
+  background:linear-gradient(170deg,#FFFFFF,#F7F4FF);
+  color:#3D3380;transition:transform .14s,box-shadow .14s,border-color .14s,background .14s;
+  box-shadow:0 5px 0 #D9CFFB;
+  display:flex;align-items:center;justify-content:center;min-height:78px;
+}
+.opt:hover:not(.locked){transform:translateY(-3px);border-color:#B9A5FF;box-shadow:0 8px 0 #D9CFFB}
+.opt:active:not(.locked){transform:translateY(3px);box-shadow:0 1px 0 #D9CFFB}
+.opt.locked{cursor:default;opacity:.62}
+.opt .sym{font-size:46px;line-height:1;color:#6C4DF6}
+.opt .dec{font-size:34px;line-height:1;color:#1FA862;font-variant-numeric:tabular-nums}
+.opt.correct{
+  background:linear-gradient(170deg,#D8FFE9,#A9F5CC);border-color:#2ED47A;
+  box-shadow:0 5px 0 #1FA862;opacity:1;animation:pulseOk .5s;
+}
+.opt.wrong{
+  background:linear-gradient(170deg,#FFE0E0,#FFC2C2);border-color:#FF5C5C;
+  box-shadow:0 5px 0 #D93B3B;opacity:1;animation:shake .45s;
+}
+@keyframes pulseOk{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+.feedback{display:none;margin-top:18px}
+.feedback.show{display:block;animation:pop .35s ease}
+.fb-head{font-size:19px;font-weight:800;margin-bottom:6px}
+.feedback.ok .fb-head{color:#1FA862}
+.feedback.bad .fb-head{color:#D93B3B}
+.fb-body{
+  font-size:15.5px;line-height:1.65;color:#5A5288;font-weight:600;
+  background:#F5F2FF;border-radius:16px;padding:13px 16px;
+  border-left:6px solid #B9A5FF;margin-bottom:14px;
+}
+.feedback.ok .fb-body{background:#EEFBF3;border-left-color:#2ED47A}
+.feedback.bad .fb-body{background:#FFF3F3;border-left-color:#FF8A8A}
+.fb-body .steps{display:grid;gap:4px;margin-top:6px}
+.fb-body .step-line{display:flex;gap:8px;align-items:flex-start;font-size:14.5px}
+
+.btn{
+  font-family:inherit;font-weight:800;font-size:17px;cursor:pointer;
+  border:none;border-radius:18px;padding:15px 28px;color:#fff;
+  transition:transform .15s,box-shadow .15s,filter .15s;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.btn.primary{background:linear-gradient(160deg,#7C4DFF,#5B2FE0);box-shadow:0 6px 0 #4520B8;width:100%}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:linear-gradient(160deg,#9AA0C7,#767CA8);box-shadow:0 6px 0 #5A5F85}
+.btn-next{
+  font-family:inherit;font-weight:800;font-size:17px;cursor:pointer;width:100%;
+  border:none;border-radius:18px;padding:15px;color:#fff;
+  background:linear-gradient(160deg,#2ED47A,#1BA862);
+  box-shadow:0 6px 0 #14874E;
+  transition:transform .15s,box-shadow .15s,filter .15s;
+}
+.btn-next:hover{filter:brightness(1.08)}
+.btn-next:active{transform:translateY(3px);box-shadow:0 2px 0 #14874E}
+
+/* ============ END SCREEN ============ */
+.end-card{text-align:center}
+.stars{font-size:48px;letter-spacing:6px;margin-bottom:8px;min-height:60px}
+.star{display:inline-block;filter:grayscale(1);opacity:.28;transform:scale(.8);transition:.3s}
+.star.on{filter:none;opacity:1;transform:scale(1);animation:starPop .55s cubic-bezier(.2,.9,.3,1.6) backwards}
+@keyframes starPop{from{transform:scale(0) rotate(-90deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+#end-title{font-size:26px;font-weight:800;color:#3D3380;margin-bottom:6px}
+.end-score{font-size:19px;font-weight:700;color:#6B6396;margin-bottom:6px}
+.end-score b{font-size:30px;color:#E93B8B}
+#end-msg{font-size:16px;color:#7A72A8;font-weight:600;margin-bottom:22px;line-height:1.5}
+.end-actions{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+
+/* ============ MATERI SCREEN ============ */
+.materi-card{
+  padding:22px 22px 26px;
+  max-height:calc(100vh - 60px);
+  display:flex;flex-direction:column;
+}
+.materi-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  padding-bottom:14px;border-bottom:3px dashed #E2DAFF;
+  flex:0 0 auto;
+}
+.materi-header .mh-emoji{
+  font-size:40px;line-height:1;
+  animation:bounce 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 6px 10px rgba(255,138,60,.4));
+}
+.materi-header h2{
+  font-size:clamp(22px,5vw,30px);font-weight:800;
+  background:linear-gradient(95deg,#FF8A3C,#E93B8B,#7C4DFF);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.materi-header p{font-size:13.5px;color:#7A72A8;font-weight:600;margin-top:2px}
+
+.materi-body{
+  overflow-y:auto;
+  flex:1 1 auto;
+  padding-right:6px;
+  display:grid;gap:14px;
+  scrollbar-width:thin;
+  scrollbar-color:#C9B8FF transparent;
+}
+.materi-body::-webkit-scrollbar{width:8px}
+.materi-body::-webkit-scrollbar-thumb{background:#C9B8FF;border-radius:99px}
+.materi-body::-webkit-scrollbar-track{background:transparent}
+
+.topic{
+  background:linear-gradient(165deg,#FBF9FF,#F2EEFF);
+  border-radius:20px;
+  padding:16px 18px;
+  border-left:7px solid #B9A5FF;
+  box-shadow:0 4px 14px rgba(90,50,180,.07);
+}
+.topic.t-pink{border-left-color:#FF5FA2;background:linear-gradient(165deg,#FFF5FA,#FFE9F3)}
+.topic.t-blue{border-left-color:#3DA5FF;background:linear-gradient(165deg,#F3F9FF,#E5F2FF)}
+.topic.t-green{border-left-color:#2ED47A;background:linear-gradient(165deg,#F1FCF6,#E1F8EC)}
+.topic.t-yellow{border-left-color:#FFC93C;background:linear-gradient(165deg,#FFFCF0,#FFF5D6)}
+.topic.t-orange{border-left-color:#FF8A3C;background:linear-gradient(165deg,#FFF7F1,#FFEBDA)}
+.topic.t-purple{border-left-color:#8B5CF6;background:linear-gradient(165deg,#F8F4FF,#EFE7FF)}
+.topic.t-teal{border-left-color:#12B8A6;background:linear-gradient(165deg,#EFFCFA,#DEF8F4)}
+
+.topic h3{
+  font-size:18px;font-weight:800;color:#3D3380;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.topic h3 .tnum{
+  display:inline-grid;place-items:center;
+  min-width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(160deg,#7C4DFF,#5B2FE0);color:#fff;
+  font-size:14px;font-weight:800;
+  box-shadow:0 3px 0 #4520B8;
+}
+.topic p{font-size:15px;line-height:1.65;color:#5A5288;font-weight:600;margin-bottom:8px}
+.topic p:last-child{margin-bottom:0}
+.topic b{color:#E93B8B}
+
+.formula{
+  display:inline-block;
+  background:#fff;border:2px dashed #B9A5FF;border-radius:14px;
+  padding:10px 16px;margin:8px 0;
+  font-size:16px;font-weight:800;color:#4B3FA8;
+  box-shadow:0 3px 10px rgba(90,50,180,.08);
+}
+.formula.center{display:block;text-align:center}
+
+.callout{
+  display:flex;gap:10px;align-items:flex-start;
+  background:#fff;border-radius:14px;padding:11px 14px;margin-top:10px;
+  font-size:14px;font-weight:700;color:#4B3FA8;
+  border:2px solid #FFE9A8;
+  box-shadow:0 3px 10px rgba(200,150,20,.1);
+}
+.callout .ci{font-size:20px;line-height:1.1;flex:0 0 auto}
+.callout.tip{border-color:#A9F5CC}
+.callout.warn{border-color:#FFC2C2}
+
+.example-row{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  flex-wrap:wrap;margin:12px 0;
+  background:#fff;border-radius:16px;padding:14px 10px;
+  box-shadow:0 3px 10px rgba(90,50,180,.07);
+}
+.example-row .ex-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.example-row .ex-cap{font-size:17px;color:#4B3FA8;font-weight:800}
+.example-row .ex-sign{font-size:26px;font-weight:800;color:#8B5CF6}
+
+/* Kotak penyelesaian langkah demi langkah */
+.solution{
+  background:#fff;
+  border-radius:16px;
+  padding:14px 16px;
+  margin:10px 0;
+  box-shadow:0 3px 12px rgba(90,50,180,.08);
+  border-left:5px solid #2ED47A;
+}
+.solution .sol-title{
+  font-size:14.5px;font-weight:800;color:#1FA862;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.solution .sol-step{
+  display:flex;gap:10px;align-items:flex-start;
+  font-size:14.5px;font-weight:600;color:#4B3FA8;
+  line-height:1.55;margin-bottom:6px;
+}
+.solution .sol-step:last-child{margin-bottom:0}
+.solution .step-num{
+  flex:0 0 auto;
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(160deg,#2ED47A,#1BA862);
+  color:#fff;display:grid;place-items:center;
+  font-size:12px;font-weight:800;margin-top:1px;
+  box-shadow:0 2px 0 #14874E;
+}
+.solution .sol-result{
+  font-size:16px;font-weight:800;color:#E93B8B;
+  text-align:center;padding:8px;border-top:2px dashed #E2DAFF;margin-top:8px;
+}
+
+/* Tabel konversi mini */
+.conv-table{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+  gap:8px;margin:10px 0;
+}
+.conv-item{
+  background:#fff;border-radius:12px;padding:10px 8px;
+  text-align:center;font-weight:800;font-size:15px;color:#4B3FA8;
+  box-shadow:0 3px 8px rgba(90,50,180,.07);
+  border:2px solid #EFE8FF;
+}
+.conv-item .arrow{color:#FF8A3C;font-size:13px;display:block;margin:2px 0}
+.conv-item .dec{color:#1FA862;font-size:16px}
+
+.materi-actions{
+  flex:0 0 auto;
+  display:grid;gap:10px;grid-template-columns:1fr 1fr;
+  margin-top:16px;padding-top:14px;
+  border-top:3px dashed #E2DAFF;
+}
+
+/* ============ KONFETTI ============ */
+.confetti{
+  position:fixed;top:-24px;width:11px;height:15px;border-radius:3px;z-index:999;
+  animation:fall linear forwards;pointer-events:none;
+}
+@keyframes fall{to{transform:translateY(108vh) rotate(760deg);opacity:.85}}
+
+/* ============ RESPONSIF ============ */
+@media (max-width:560px){
+  .card{padding:20px 16px 22px;border-radius:24px}
+  .levels{grid-template-columns:1fr;gap:9px}
+  .level-btn{flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 16px;text-align:left}
+  .lv-desc{min-height:0}
+  .options{grid-template-columns:repeat(2,1fr);gap:10px}
+  .opt{font-size:25px;min-height:68px;padding:14px 8px}
+  .opt .sym{font-size:36px}
+  .opt .dec{font-size:26px}
+  .end-actions{grid-template-columns:1fr}
+  .mascot{font-size:52px}
+  .materi-actions{grid-template-columns:1fr}
+  .materi-card{padding:18px 14px 20px}
+  .example-row{gap:8px;padding:12px 6px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ LAYAR AWAL ============ -->
+  <section class="screen active" id="screen-start">
+    <div class="card start-card">
+      <div class="mascot">🍕</div>
+      <h1 class="game-title">Petualangan Pecahan</h1>
+      <p class="subtitle">Belajar pecahan jadi seru! Pilih level dan kumpulkan bintang ⭐</p>
+
+      <div class="levels">
+        <button class="level-btn" data-level="mudah">
+          <span class="lv-emoji">😊</span>
+          <span class="lv-name">Mudah</span>
+          <span class="lv-desc">Mengenal &amp; membandingkan pecahan sederhana</span>
+        </button>
+        <button class="level-btn" data-level="sedang">
+          <span class="lv-emoji">😎</span>
+          <span class="lv-name">Sedang</span>
+          <span class="lv-desc">Pecahan senilai, desimal, penjumlahan &amp; penyederhanaan</span>
+        </button>
+        <button class="level-btn" data-level="sulit">
+          <span class="lv-emoji">🤓</span>
+          <span class="lv-name">Sulit</span>
+          <span class="lv-desc">Operasi beda penyebut, perkalian &amp; konversi desimal</span>
+        </button>
+      </div>
+
+      <button class="materi-btn" id="btn-materi">
+        <span class="mt-emoji">📚</span>
+        <span>Materi Pecahan</span>
+      </button>
+
+      <div class="how">
+        <h3>🎮 Cara Bermain</h3>
+        <ul>
+          <li><span>1️⃣</span> Jawab <b>10 soal</b> pecahan yang muncul.</li>
+          <li><span>2️⃣</span> Setiap jawaban benar dapat <b>10 poin</b> (+bonus beruntun).</li>
+          <li><span>3️⃣</span> Kamu punya <b>3 nyawa</b> ❤️ — jawaban salah mengurangi 1 nyawa.</li>
+          <li><span>4️⃣</span> Kumpulkan <b>3 bintang</b> untuk jadi Master Pecahan! 🏆</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LAYAR MATERI ============ -->
+  <section class="screen" id="screen-materi">
+    <div class="card materi-card">
+      <div class="materi-header">
+        <div class="mh-emoji">📚</div>
+        <div>
+          <h2>Belajar Pecahan</h2>
+          <p>Panduan lengkap + contoh soal &amp; penyelesaiannya</p>
+        </div>
+      </div>
+
+      <div class="materi-body">
+
+        <!-- 1. Apa itu pecahan? -->
+        <div class="topic t-pink">
+          <h3><span class="tnum">1</span> Apa Itu Pecahan?</h3>
+          <p><b>Pecahan</b> adalah bilangan yang menyatakan <b>bagian dari suatu keseluruhan</b>.
+             Pecahan muncul ketika kita membagi sesuatu menjadi beberapa bagian yang <b>sama besar</b>.</p>
+          <p>Contoh: sebuah pizza dipotong menjadi 4 bagian sama besar. Jika kamu makan 1 potong, kamu memakan <b>1 dari 4</b> bagian, ditulis sebagai pecahan <b>1/4</b>.</p>
+          <div class="example-row" id="ex-pizza"></div>
+          <div class="callout tip">
+            <span class="ci">💡</span>
+            <span>Bagian-bagiannya harus <b>sama besar</b>, ya! Kalau tidak sama, itu bukan pecahan yang benar.</span>
+          </div>
+        </div>
+
+        <!-- 2. Pembilang & Penyebut -->
+        <div class="topic t-blue">
+          <h3><span class="tnum">2</span> Pembilang &amp; Penyebut</h3>
+          <p>Setiap pecahan punya dua bagian penting:</p>
+          <div class="example-row">
+            <div class="ex-item">
+              <div class="frac" style="font-size:44px;color:#E93B8B">
+                <span class="fn">3</span><span class="fd">4</span>
+              </div>
+              <div class="ex-cap" style="font-size:13px;color:#7A72A8">Pembilang (atas)</div>
+            </div>
+            <div class="ex-item">
+              <div class="frac" style="font-size:44px;color:#2B7BE4">
+                <span class="fn">3</span><span class="fd">4</span>
+              </div>
+              <div class="ex-cap" style="font-size:13px;color:#7A72A8">Penyebut (bawah)</div>
+            </div>
+          </div>
+          <p><b>Pembilang</b> = banyaknya bagian yang diambil/diwarnai (di atas).<br>
+             <b>Penyebut</b> = banyaknya seluruh bagian yang sama (di bawah).</p>
+          <p>Jadi, <b>3/4</b> artinya: <b>3 bagian</b> diambil dari total <b>4 bagian</b> yang sama besar.</p>
+          <div class="callout warn">
+            <span class="ci">⚠️</span>
+            <span>Penyebut <b>tidak boleh 0</b>, karena membagi dengan 0 tidak terdefinisi.</span>
+          </div>
+        </div>
+
+        <!-- 3. Pecahan Senilai -->
+        <div class="topic t-green">
+          <h3><span class="tnum">3</span> Pecahan Senilai</h3>
+          <p><b>Pecahan senilai</b> adalah pecahan berbeda bentuk tapi nilainya <b>sama</b>.
+             Caranya: kalikan atau bagi pembilang dan penyebut dengan bilangan yang sama.</p>
+          <div class="formula center">a/b = (a × k) / (b × k)</div>
+          <p>Contoh: <b>1/2</b> senilai dengan <b>2/4</b>, <b>3/6</b>, <b>4/8</b>.</p>
+          <div class="example-row" id="ex-equiv"></div>
+        </div>
+
+        <!-- 4. Membandingkan Pecahan -->
+        <div class="topic t-yellow">
+          <h3><span class="tnum">4</span> Membandingkan Pecahan</h3>
+          <p>Gunakan tanda <b>&gt;</b> (lebih besar), <b>&lt;</b> (lebih kecil), atau <b>=</b> (sama).</p>
+          <p><b>Penyebut sama</b> → cukup bandingkan pembilangnya:</p>
+          <div class="formula center">3/7 &gt; 2/7 &nbsp; karena &nbsp; 3 &gt; 2</div>
+          <p><b>Penyebut berbeda</b> → samakan penyebutnya dulu (KPK), baru bandingkan.</p>
+          <div class="solution">
+            <div class="sol-title">📝 Contoh: Bandingkan 1/2 dan 1/3</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Cari KPK dari 2 dan 3 → <b>6</b></span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>1/2 = (1×3)/(2×3) = <b>3/6</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>1/3 = (1×2)/(3×2) = <b>2/6</b></span></div>
+            <div class="sol-step"><span class="step-num">4</span><span>3/6 &gt; 2/6, jadi <b>1/2 &gt; 1/3</b></span></div>
+          </div>
+          <div class="callout warn">
+            <span class="ci">🔍</span>
+            <span>Penyebut lebih besar <b>belum tentu</b> nilainya lebih besar. Contoh: 1/8 &lt; 1/4.</span>
+          </div>
+        </div>
+
+        <!-- 5. Menyederhanakan -->
+        <div class="topic t-orange">
+          <h3><span class="tnum">5</span> Menyederhanakan Pecahan</h3>
+          <p>Menyederhanakan = membagi pembilang dan penyebut dengan <b>FPB</b> keduanya.</p>
+          <div class="solution">
+            <div class="sol-title">📝 Contoh: Sederhanakan 12/18</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Cari FPB dari 12 dan 18 → <b>6</b></span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>12 ÷ 6 = <b>2</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>18 ÷ 6 = <b>3</b></span></div>
+            <div class="sol-result">Hasil: 12/18 = 2/3</div>
+          </div>
+        </div>
+
+        <!-- 6. Penjumlahan & Pengurangan -->
+        <div class="topic t-purple">
+          <h3><span class="tnum">6</span> Penjumlahan &amp; Pengurangan</h3>
+          <p><b>Penyebut sama</b> → langsung jumlahkan/kurangkan pembilangnya:</p>
+          <div class="formula center">2/7 + 3/7 = 5/7</div>
+          <p><b>Penyebut berbeda</b> → samakan penyebut dulu, baru dihitung:</p>
+          <div class="solution">
+            <div class="sol-title">📝 Contoh: 1/2 + 1/3</div>
+            <div class="sol-step"><span class="step-num">1</span><span>KPK dari 2 dan 3 = <b>6</b></span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>1/2 = 3/6 &nbsp;dan&nbsp; 1/3 = 2/6</span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>3/6 + 2/6 = <b>5/6</b></span></div>
+            <div class="sol-result">Hasil: 1/2 + 1/3 = 5/6</div>
+          </div>
+          <div class="callout warn">
+            <span class="ci">🚫</span>
+            <span>Jangan jumlahkan penyebutnya! 1/2 + 1/3 <b>bukan</b> 2/5, ya.</span>
+          </div>
+        </div>
+
+        <!-- 7. Perkalian -->
+        <div class="topic t-blue">
+          <h3><span class="tnum">7</span> Perkalian Pecahan</h3>
+          <p>Kalikan <b>pembilang dengan pembilang</b>, dan <b>penyebut dengan penyebut</b>.</p>
+          <div class="formula center">a/b × c/d = (a × c) / (b × d)</div>
+          <div class="solution">
+            <div class="sol-title">📝 Contoh: 2/3 × 3/4</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Pembilang: 2 × 3 = <b>6</b></span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>Penyebut: 3 × 4 = <b>12</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>Sederhanakan: 6/12 = <b>1/2</b></span></div>
+            <div class="sol-result">Hasil: 2/3 × 3/4 = 1/2</div>
+          </div>
+        </div>
+
+        <!-- 8. Mengubah Pecahan ke Desimal -->
+        <div class="topic t-teal">
+          <h3><span class="tnum">8</span> Mengubah Pecahan ke Desimal</h3>
+          <p>Ada <b>dua cara</b> mengubah pecahan menjadi desimal:</p>
+          <p><b>Cara 1:</b> Bagi pembilang dengan penyebut.</p>
+          <div class="formula center">a/b = a ÷ b</div>
+          <p><b>Cara 2:</b> Ubah penyebut menjadi <b>10, 100, atau 1000</b>, lalu tulis sebagai desimal.</p>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 1: Ubah 3/4 menjadi desimal</div>
+            <div class="sol-step"><span class="step-num">1</span><span><b>Cara 1:</b> 3 ÷ 4 = <b>0,75</b></span></div>
+            <div class="sol-step"><span class="step-num">2</span><span><b>Cara 2:</b> kalikan penyebut agar jadi 100</span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>(3 × 25) / (4 × 25) = <b>75/100</b></span></div>
+            <div class="sol-step"><span class="step-num">4</span><span>75/100 = <b>0,75</b> (geser koma 2 angka)</span></div>
+            <div class="sol-result">Hasil: 3/4 = 0,75</div>
+          </div>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 2: Ubah 3/5 menjadi desimal</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Kalikan penyebut agar jadi 10</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>(3 × 2) / (5 × 2) = <b>6/10</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>6/10 = <b>0,6</b></span></div>
+            <div class="sol-result">Hasil: 3/5 = 0,6</div>
+          </div>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 3: Ubah 1/8 menjadi desimal</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Kalikan penyebut agar jadi 1000</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>(1 × 125) / (8 × 125) = <b>125/1000</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>125/1000 = <b>0,125</b></span></div>
+            <div class="sol-result">Hasil: 1/8 = 0,125</div>
+          </div>
+
+          <p><b>Tabel hafalan pecahan ↔ desimal umum:</b></p>
+          <div class="conv-table">
+            <div class="conv-item">1/2<span class="arrow">↔</span><span class="dec">0,5</span></div>
+            <div class="conv-item">1/4<span class="arrow">↔</span><span class="dec">0,25</span></div>
+            <div class="conv-item">3/4<span class="arrow">↔</span><span class="dec">0,75</span></div>
+            <div class="conv-item">1/5<span class="arrow">↔</span><span class="dec">0,2</span></div>
+            <div class="conv-item">2/5<span class="arrow">↔</span><span class="dec">0,4</span></div>
+            <div class="conv-item">3/5<span class="arrow">↔</span><span class="dec">0,6</span></div>
+            <div class="conv-item">4/5<span class="arrow">↔</span><span class="dec">0,8</span></div>
+            <div class="conv-item">1/8<span class="arrow">↔</span><span class="dec">0,125</span></div>
+            <div class="conv-item">1/10<span class="arrow">↔</span><span class="dec">0,1</span></div>
+            <div class="conv-item">1/20<span class="arrow">↔</span><span class="dec">0,05</span></div>
+          </div>
+
+          <div class="callout tip">
+            <span class="ci">💡</span>
+            <span>Di Indonesia, desimal biasanya ditulis dengan <b>koma</b> (0,5) bukan titik (0.5).</span>
+          </div>
+        </div>
+
+        <!-- 9. Mengubah Desimal ke Pecahan -->
+        <div class="topic t-teal">
+          <h3><span class="tnum">9</span> Mengubah Desimal ke Pecahan</h3>
+          <p><b>Langkah-langkah:</b></p>
+          <p>
+            ① Hitung banyak angka di belakang koma.<br>
+            ② Tulis sebagai pecahan berpenyebut <b>10, 100, atau 1000</b>:<br>
+            &nbsp;&nbsp;&nbsp;• 1 angka → per 10<br>
+            &nbsp;&nbsp;&nbsp;• 2 angka → per 100<br>
+            &nbsp;&nbsp;&nbsp;• 3 angka → per 1000<br>
+            ③ Sederhanakan pecahannya.
+          </p>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 1: Ubah 0,5 menjadi pecahan</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Angka di belakang koma: <b>1 angka</b> → per 10</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>0,5 = <b>5/10</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>Sederhanakan (FPB 5 dan 10 = 5): 5/10 = <b>1/2</b></span></div>
+            <div class="sol-result">Hasil: 0,5 = 1/2</div>
+          </div>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 2: Ubah 0,75 menjadi pecahan</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Angka di belakang koma: <b>2 angka</b> → per 100</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>0,75 = <b>75/100</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>FPB(75, 100) = 25 → 75÷25 / 100÷25 = <b>3/4</b></span></div>
+            <div class="sol-result">Hasil: 0,75 = 3/4</div>
+          </div>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 3: Ubah 0,125 menjadi pecahan</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Angka di belakang koma: <b>3 angka</b> → per 1000</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>0,125 = <b>125/1000</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>FPB(125, 1000) = 125 → 125÷125 / 1000÷125 = <b>1/8</b></span></div>
+            <div class="sol-result">Hasil: 0,125 = 1/8</div>
+          </div>
+
+          <div class="solution">
+            <div class="sol-title">📝 Contoh 4: Ubah 0,6 menjadi pecahan</div>
+            <div class="sol-step"><span class="step-num">1</span><span>Angka di belakang koma: <b>1 angka</b> → per 10</span></div>
+            <div class="sol-step"><span class="step-num">2</span><span>0,6 = <b>6/10</b></span></div>
+            <div class="sol-step"><span class="step-num">3</span><span>FPB(6, 10) = 2 → 6÷2 / 10÷2 = <b>3/5</b></span></div>
+            <div class="sol-result">Hasil: 0,6 = 3/5</div>
+          </div>
+
+          <div class="callout tip">
+            <span class="ci">🧠</span>
+            <span>Selalu <b>sederhanakan</b> hasilnya supaya jadi bentuk paling sederhana!</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="materi-actions">
+        <button class="btn ghost" id="btn-materi-back">← Kembali</button>
+        <button class="btn primary" id="btn-materi-play" style="width:100%">Mulai Bermain 🎮</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LAYAR PERMAINAN ============ -->
+  <section class="screen" id="screen-game">
+    <div class="topbar">
+      <button class="icon-btn" id="btn-quit" title="Kembali ke menu">✕</button>
+      <div class="pill score-pill">⭐ <span id="score">0</span></div>
+      <div class="pill lives-pill" id="lives"></div>
+    </div>
+
+    <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div class="card game-card">
+      <div class="qmeta">Soal <span id="qnum">1</span> / <span id="qtotal">10</span></div>
+      <h2 class="prompt" id="prompt"></h2>
+      <div class="visual" id="visual"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </section>
+
+  <!-- ============ LAYAR HASIL ============ -->
+  <section class="screen" id="screen-end">
+    <div class="card end-card">
+      <div class="stars" id="stars"></div>
+      <h2 id="end-title">Permainan Selesai!</h2>
+      <p class="end-score">Skor kamu: <b id="final-score">0</b></p>
+      <p id="end-msg"></p>
+      <div class="end-actions">
+        <button class="btn primary" id="btn-again">Main Lagi 🔁</button>
+        <button class="btn ghost" id="btn-menu">Pilih Level 🏠</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================
+   UTILITAS
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const eq = (a, b) => a.n * b.d === b.n * a.d;
+
+/* Render pecahan vertikal */
+const fstr = f => `<span class="frac"><span class="fn">${f.n}</span><span class="fd">${f.d}</span></span>`;
+/* Format desimal gaya Indonesia: pakai koma */
+const toID = x => String(x).replace('.', ',');
+
+/* =========================================================
+   SVG PIE
+   ========================================================= */
+function polar(cx, cy, r, deg) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return [+(cx + r * Math.cos(rad)).toFixed(2), +(cy + r * Math.sin(rad)).toFixed(2)];
+}
+function arcPath(cx, cy, r, a1, a2) {
+  const [x1, y1] = polar(cx, cy, r, a1);
+  const [x2, y2] = polar(cx, cy, r, a2);
+  const large = (a2 - a1) > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+}
+function pieSVG(num, den, color = '#FF5FA2', size = 140) {
+  const cx = size / 2, cy = size / 2, r = size / 2 - 5;
+  let inner = '';
+  if (den === 1) {
+    inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${num >= 1 ? color : '#fff'}" stroke="#2D2257" stroke-width="3"/>`;
+  } else {
+    for (let i = 0; i < den; i++) {
+      const a1 = i * 360 / den, a2 = (i + 1) * 360 / den;
+      const filled = i < num;
+      inner += `<path d="${arcPath(cx, cy, r, a1, a2)}" fill="${filled ? color : '#ffffff'}"
+                stroke="#2D2257" stroke-width="2.4" stroke-linejoin="round"/>`;
+    }
+  }
+  return `<svg class="pie" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img">${inner}</svg>`;
+}
+
+/* =========================================================
+   ISI CONTOH VISUAL PADA HALAMAN MATERI
+   ========================================================= */
+function buildMateriVisuals() {
+  const pizzaRow = $('#ex-pizza');
+  if (pizzaRow) {
+    pizzaRow.innerHTML = `
+      <div class="ex-item">${pieSVG(1, 4, '#FF5FA2', 110)}<div class="ex-cap">1 bagian</div></div>
+      <div class="ex-sign">=</div>
+      <div class="ex-item">
+        <div class="frac" style="font-size:44px;color:#E93B8B">
+          <span class="fn">1</span><span class="fd">4</span>
+        </div>
+        <div class="ex-cap" style="font-size:13px;color:#7A72A8">satu per empat</div>
+      </div>
+    `;
+  }
+  const eqRow = $('#ex-equiv');
+  if (eqRow) {
+    eqRow.innerHTML = `
+      <div class="ex-item">${pieSVG(1, 2, '#2ED47A', 100)}<div class="ex-cap">1/2</div></div>
+      <div class="ex-sign">=</div>
+      <div class="ex-item">${pieSVG(2, 4, '#3DA5FF', 100)}<div class="ex-cap">2/4</div></div>
+      <div class="ex-sign">=</div>
+      <div class="ex-item">${pieSVG(4, 8, '#FFC93C', 100)}<div class="ex-cap">4/8</div></div>
+    `;
+  }
+}
+
+/* =========================================================
+   PEMBUAT PILIHAN JAWABAN
+   ========================================================= */
+function makeChoices(correct, cands, count) {
+  const key = f => f.n + '/' + f.d;
+  const seen = new Set([key(correct)]);
+  const out = [correct];
+
+  const pool = shuffle(cands.filter(c => c && c.d >= 2 && c.n >= 1));
+  for (const c of pool) {
+    if (out.length >= count) break;
+    if (seen.has(key(c))) continue;
+    if (eq(c, correct)) continue;
+    seen.add(key(c));
+    out.push(c);
+  }
+
+  let guard = 0;
+  while (out.length < count && guard++ < 300) {
+    const f = { n: rnd(1, 9), d: rnd(2, 12) };
+    if (f.n >= f.d) continue;
+    if (seen.has(key(f)) || eq(f, correct)) continue;
+    seen.add(key(f));
+    out.push(f);
+  }
+  return shuffle(out);
+}
+function fracChoices(correct, cands, count = 4) {
+  return makeChoices(correct, cands, count).map(f => ({
+    html: fstr(f),
+    correct: eq(f, correct)
+  }));
+}
+/* Pilihan berupa teks desimal */
+function decChoices(correctStr, cands, count = 4) {
+  const seen = new Set([correctStr]);
+  const out = [correctStr];
+  for (const c of shuffle(cands.slice())) {
+    if (out.length >= count) break;
+    if (seen.has(c)) continue;
+    seen.add(c); out.push(c);
+  }
+  // tambahan fallback
+  let guard = 0;
+  while (out.length < count && guard++ < 200) {
+    const x = (Math.random() * 1.5).toFixed(2).replace('.', ',');
+    if (seen.has(x)) continue;
+    seen.add(x); out.push(x);
+  }
+  return shuffle(out).map(s => ({
+    html: `<span class="dec">${s}</span>`,
+    correct: s === correctStr
+  }));
+}
+
+/* =========================================================
+   GENERATOR SOAL
+   ========================================================= */
+
+/* 1. Mengenali pecahan dari gambar */
+function qIdentify() {
+  const den = pick([2, 3, 4, 5, 6, 8]);
+  const num = rnd(1, den - 1);
+  const correct = { n: num, d: den };
+  const cands = [
+    { n: den, d: num }, { n: num, d: den - num },
+    { n: num + 1, d: den }, { n: Math.max(1, num - 1), d: den },
+    { n: num, d: den + 1 }, { n: den - num, d: den }
+  ];
+  return {
+    prompt: 'Pecahan berapa yang ditunjukkan oleh daerah berwarna?',
+    visual: `<div class="viz"><div class="viz-item">${pieSVG(num, den, '#FF5FA2', 150)}</div></div>`,
+    options: fracChoices(correct, cands, 4),
+    explain: `Lingkaran dibagi menjadi <b>${den}</b> bagian sama besar, dan <b>${num}</b> bagian diwarnai.<br>
+              Jadi pecahannya adalah ${fstr(correct)}.`
+  };
+}
+
+/* 2. Membandingkan dua pecahan */
+function qSignCompare(diffDen) {
+  let L, R, guard = 0;
+  while (guard++ < 500) {
+    if (!diffDen) {
+      const d = pick([3, 4, 5, 6, 7, 8, 10]);
+      const x = rnd(1, d - 1), y = rnd(1, d - 1);
+      if (x === y) continue;
+      L = { n: x, d }; R = { n: y, d };
+    } else {
+      L = { n: rnd(1, 5), d: pick([2, 3, 4, 5, 6, 8]) };
+      R = { n: rnd(1, 5), d: pick([2, 3, 4, 5, 6, 8]) };
+      if (L.n >= L.d || R.n >= R.d || L.d === R.d || eq(L, R)) continue;
+    }
+    break;
+  }
+  const lv = L.n * R.d, rv = R.n * L.d;
+  const sym = lv > rv ? '>' : lv < rv ? '<' : '=';
+  const options = ['>', '<', '='].map(s => ({
+    html: `<span class="sym">${s}</span>`,
+    correct: s === sym
+  }));
+  const explain = L.d === R.d
+    ? `Penyebutnya sama (${L.d}), cukup bandingkan pembilangnya: <b>${L.n}</b> ${sym} <b>${R.n}</b>.<br>
+       Maka ${fstr(L)} ${sym} ${fstr(R)}.`
+    : `Samakan penyebut menjadi ${L.d * R.d}:<br>
+       ${fstr(L)} = ${L.n * R.d}/${L.d * R.d} &nbsp;dan&nbsp; ${fstr(R)} = ${R.n * L.d}/${R.d * L.d}.<br>
+       Karena ${lv} ${sym} ${rv}, maka <b>${fstr(L)} ${sym} ${fstr(R)}</b>.`;
+  return {
+    prompt: 'Manakah tanda yang tepat untuk mengisi titik-titik?',
+    visual: `<div class="viz">
+        <div class="viz-item">${pieSVG(L.n, L.d, '#3DA5FF', 118)}<div class="cap">${fstr(L)}</div></div>
+        <div class="op-sign">?</div>
+        <div class="viz-item">${pieSVG(R.n, R.d, '#FFC93C', 118)}<div class="cap">${fstr(R)}</div></div>
+      </div>`,
+    options, explain
+  };
+}
+
+/* 3. Pecahan senilai */
+function qEquivalent() {
+  let n, d, guard = 0;
+  do { d = pick([2, 3, 4, 5, 6]); n = rnd(1, d - 1); } while (gcd(n, d) !== 1 && guard++ < 100);
+  const k = pick([2, 3, 4]);
+  const correct = { n: n * k, d: d * k };
+  const cands = [
+    { n: n, d: d + 1 }, { n: n + 1, d: d },
+    { n: n * k + 1, d: d * k }, { n: n * k, d: d * k + 1 },
+    { n: n + 1, d: d + 1 }
+  ];
+  return {
+    prompt: `Pecahan manakah yang <b>senilai</b> dengan ${fstr({ n, d })}?`,
+    visual: `<div class="viz"><div class="viz-item">${pieSVG(n, d, '#8B5CF6', 140)}</div></div>`,
+    options: fracChoices(correct, cands, 4),
+    explain: `Kalikan pembilang <i>dan</i> penyebut dengan bilangan yang sama, yaitu <b>${k}</b>:<br>
+              ${n} × ${k} = ${n * k} &nbsp;dan&nbsp; ${d} × ${k} = ${d * k}.<br>
+              Jadi ${fstr({ n, d })} = <b>${fstr(correct)}</b>.`
+  };
+}
+
+/* 4. Penjumlahan / pengurangan penyebut sama */
+function qAddSubSame(isSub) {
+  const d = rnd(4, 10);
+  let n1, n2;
+  if (isSub) { n1 = rnd(2, d - 1); n2 = rnd(1, n1 - 1); }
+  else { n1 = rnd(1, d - 2); n2 = rnd(1, d - 1 - n1); }
+  const res = isSub ? n1 - n2 : n1 + n2;
+  const correct = { n: res, d };
+  const cands = [
+    { n: res, d: d * 2 }, { n: res + 1, d }, { n: res - 1, d },
+    { n: res + 2, d }, { n: res, d: d + 1 }
+  ];
+  const op = isSub ? '−' : '+';
+  return {
+    prompt: `Hitunglah hasil dari operasi pecahan berikut!`,
+    visual: `<div class="viz">
+        <div class="viz-item">${pieSVG(n1, d, '#3DA5FF', 110)}<div class="cap">${fstr({ n: n1, d })}</div></div>
+        <div class="op-sign">${op}</div>
+        <div class="viz-item">${pieSVG(n2, d, '#FFC93C', 110)}<div class="cap">${fstr({ n: n2, d })}</div></div>
+        <div class="op-sign">=</div>
+        <div class="viz-item"><div class="qmark">?</div></div>
+      </div>`,
+    options: fracChoices(correct, cands, 4),
+    explain: `Penyebutnya sudah sama, yaitu <b>${d}</b>. Cukup ${isSub ? 'kurangkan' : 'jumlahkan'} pembilangnya:<br>
+              ${n1} ${op} ${n2} = <b>${res}</b> &nbsp;→&nbsp; hasilnya ${fstr(correct)}.`
+  };
+}
+
+/* 5. Menyederhanakan pecahan */
+function qSimplify() {
+  const k = pick([2, 3, 4, 5]);
+  let n, d, guard = 0;
+  do { d = rnd(3, 9); n = rnd(1, d - 1); } while (gcd(n, d) !== 1 && guard++ < 100);
+  const shown = { n: n * k, d: d * k };
+  const correct = { n, d };
+  const cands = [
+    { n: n, d: d * k }, { n: n * k, d: d }, { n: n + 1, d },
+    { n: n, d: d + 1 }, { n: Math.max(1, n * k - 1), d: d * k }
+  ];
+  return {
+    prompt: `Bentuk paling sederhana dari ${fstr(shown)} adalah ...`,
+    visual: '',
+    options: fracChoices(correct, cands, 4),
+    explain: `Bagi pembilang dan penyebut dengan FPB-nya, yaitu <b>${k}</b>:<br>
+              ${shown.n} ÷ ${k} = ${n} &nbsp;dan&nbsp; ${shown.d} ÷ ${k} = ${d}.<br>
+              Jadi bentuk sederhananya adalah <b>${fstr(correct)}</b>.`
+  };
+}
+
+/* 6. Penjumlahan / pengurangan beda penyebut */
+function qAddSubDiff(isSub) {
+  let f1, f2, guard = 0;
+  while (guard++ < 400) {
+    f1 = { n: rnd(1, 3), d: pick([2, 3, 4, 5, 6]) };
+    f2 = { n: rnd(1, 3), d: pick([2, 3, 4, 5, 6]) };
+    if (f1.n >= f1.d || f2.n >= f2.d || f1.d === f2.d) continue;
+    if (isSub && f1.n * f2.d <= f2.n * f1.d) continue;
+    break;
+  }
+  const den = f1.d * f2.d;
+  const num = isSub ? f1.n * f2.d - f2.n * f1.d : f1.n * f2.d + f2.n * f1.d;
+  const g = gcd(Math.abs(num), den);
+  const correct = { n: num / g, d: den / g };
+  const cands = [
+    { n: num, d: den },
+    { n: isSub ? f1.n - f2.n : f1.n + f2.n, d: f1.d + f2.d },
+    { n: num + 1, d: den }, { n: num - 1, d: den }, { n: num, d: den + 1 }
+  ];
+  const op = isSub ? '−' : '+';
+  return {
+    prompt: `Hitunglah hasil dari operasi pecahan berikut!`,
+    visual: `<div class="viz">
+        <div class="viz-item">${pieSVG(f1.n, f1.d, '#3DA5FF', 110)}<div class="cap">${fstr(f1)}</div></div>
+        <div class="op-sign">${op}</div>
+        <div class="viz-item">${pieSVG(f2.n, f2.d, '#FFC93C', 110)}<div class="cap">${fstr(f2)}</div></div>
+        <div class="op-sign">=</div>
+        <div class="viz-item"><div class="qmark">?</div></div>
+      </div>`,
+    options: fracChoices(correct, cands, 4),
+    explain: `Samakan penyebutnya menjadi <b>${den}</b>:<br>
+              ${fstr(f1)} = ${f1.n * f2.d}/${den} &nbsp;dan&nbsp; ${fstr(f2)} = ${f2.n * f1.d}/${den}.<br>
+              ${f1.n * f2.d} ${op} ${f2.n * f1.d} = ${num}, hasilnya ${num}/${den}${g > 1 ? ` = <b>${fstr(correct)}</b>` : ''}.`
+  };
+}
+
+/* 7. Perkalian pecahan */
+function qMultiply() {
+  let f1, f2, guard = 0;
+  while (guard++ < 400) {
+    f1 = { n: rnd(1, 3), d: rnd(2, 5) };
+    f2 = { n: rnd(1, 3), d: rnd(2, 5) };
+    if (f1.n >= f1.d || f2.n >= f2.d) continue;
+    break;
+  }
+  const num = f1.n * f2.n, den = f1.d * f2.d;
+  const g = gcd(num, den);
+  const correct = { n: num / g, d: den / g };
+  const cands = [
+    { n: num, d: den }, { n: f1.n * f2.d, d: f1.d * f2.n },
+    { n: num + 1, d: den }, { n: num, d: den + 1 },
+    { n: f1.n + f2.n, d: f1.d + f2.d }
+  ];
+  return {
+    prompt: `Hitunglah hasil perkalian pecahan berikut!`,
+    visual: `<div class="viz">
+        <div class="viz-item">${pieSVG(f1.n, f1.d, '#3DA5FF', 110)}<div class="cap">${fstr(f1)}</div></div>
+        <div class="op-sign">×</div>
+        <div class="viz-item">${pieSVG(f2.n, f2.d, '#FFC93C', 110)}<div class="cap">${fstr(f2)}</div></div>
+        <div class="op-sign">=</div>
+        <div class="viz-item"><div class="qmark">?</div></div>
+      </div>`,
+    options: fracChoices(correct, cands, 4),
+    explain: `Kalikan pembilang dengan pembilang, penyebut dengan penyebut:<br>
+              (${f1.n} × ${f2.n}) / (${f1.d} × ${f2.d}) = ${num}/${den}${g > 1 ? ` = <b>${fstr(correct)}</b>` : ''}.`
+  };
+}
+
+/* =========================================================
+   SOAL BARU: KONVERSI PECAHAN ↔ DESIMAL
+   ========================================================= */
+
+/* Daftar konversi umum */
+const CONV_PAIRS = [
+  { n: 1, d: 2,  dec: '0,5',   decPlaces: 1 },
+  { n: 1, d: 4,  dec: '0,25',  decPlaces: 2 },
+  { n: 3, d: 4,  dec: '0,75',  decPlaces: 2 },
+  { n: 1, d: 5,  dec: '0,2',   decPlaces: 1 },
+  { n: 2, d: 5,  dec: '0,4',   decPlaces: 1 },
+  { n: 3, d: 5,  dec: '0,6',   decPlaces: 1 },
+  { n: 4, d: 5,  dec: '0,8',   decPlaces: 1 },
+  { n: 1, d: 8,  dec: '0,125', decPlaces: 3 },
+  { n: 3, d: 8,  dec: '0,375', decPlaces: 3 },
+  { n: 1, d: 10, dec: '0,1',   decPlaces: 1 },
+  { n: 3, d: 10, dec: '0,3',   decPlaces: 1 },
+  { n: 7, d: 10, dec: '0,7',   decPlaces: 1 },
+  { n: 1, d: 20, dec: '0,05',  decPlaces: 2 },
+  { n: 1, d: 25, dec: '0,04',  decPlaces: 2 }
+];
+
+/* 8. Ubah pecahan → desimal */
+function qFracToDec() {
+  const p = pick(CONV_PAIRS);
+  const correct = p.dec;
+
+  // distraktor: desimal lain + varian dekat
+  const wrongPool = CONV_PAIRS.filter(x => x.dec !== correct).map(x => x.dec);
+  // varian khas: geser koma atau tulis angka lain
+  const rawNum = p.n, rawDen = p.d;
+  const extra = [
+    toID((rawNum / rawDen * 10).toFixed(2).replace(/\.?0+$/, '') || '0'),
+    toID((rawDen / rawNum).toFixed(2).replace(/\.?0+$/, '') || '0'),
+    toID((rawNum / rawDen / 10).toFixed(3).replace(/\.?0+$/, '') || '0'),
+    toID((rawNum + 1) / rawDen)
+  ].filter(x => x && x !== correct);
+
+  const options = decChoices(correct, wrongPool.concat(extra), 4);
+
+  return {
+    prompt: `Bentuk <b>desimal</b> dari ${fstr({ n: p.n, d: p.d })} adalah ...`,
+    visual: `<div class="viz"><div class="viz-item">${pieSVG(p.n, p.d, '#12B8A6', 130)}<div class="cap">${fstr({ n: p.n, d: p.d })}</div></div></div>`,
+    options,
+    explain: `Bagi pembilang dengan penyebut:<br>
+              <b>${p.n} ÷ ${p.d} = ${p.dec}</b>.<br>
+              Jadi ${fstr({ n: p.n, d: p.d })} = <b>${p.dec}</b>.`
+  };
+}
+
+/* 9. Ubah desimal → pecahan */
+function qDecToFrac() {
+  const p = pick(CONV_PAIRS);
+  const correct = { n: p.n, d: p.d };
+
+  // distraktor umum
+  const cands = [
+    { n: p.n, d: p.d * 10 },
+    { n: p.n * 10, d: p.d },
+    { n: p.n + 1, d: p.d },
+    { n: p.n, d: p.d + 1 },
+    { n: p.d, d: p.n },
+    { n: p.n * 2, d: p.d },
+    { n: p.n * 3, d: p.d * 3 + 1 }
+  ];
+
+  // hitung penyebut desimal untuk penjelasan
+  const den = Math.pow(10, p.decPlaces);
+  const rawN = p.n * (den / p.d); // contoh 0,5 → 5; 0,75 → 75; 0,125 → 125
+  const g = gcd(rawN, den);
+
+  let explain;
+  if (g > 1) {
+    explain = `① Ada <b>${p.decPlaces} angka</b> di belakang koma → penyebut <b>${den}</b>.<br>
+               ② Tulis: ${p.dec} = <b>${rawN}/${den}</b><br>
+               ③ Sederhanakan dengan membagi FPB = ${g}:<br>
+               &nbsp;&nbsp;&nbsp;${rawN} ÷ ${g} = ${p.n} &nbsp;dan&nbsp; ${den} ÷ ${g} = ${p.d}<br>
+               Jadi ${p.dec} = <b>${fstr(correct)}</b>.`;
+  } else {
+    explain = `① Ada <b>${p.decPlaces} angka</b> di belakang koma → penyebut <b>${den}</b>.<br>
+               ② Tulis: ${p.dec} = <b>${rawN}/${den}</b><br>
+               ③ Pecahan sudah paling sederhana (FPB = 1).<br>
+               Jadi ${p.dec} = <b>${fstr(correct)}</b>.`;
+  }
+
+  return {
+    prompt: `Bentuk pecahan paling sederhana dari <b>${p.dec}</b> adalah ...`,
+    visual: '',
+    options: fracChoices(correct, cands, 4),
+    explain
+  };
+}
+
+/* Kumpulan soal per level */
+const POOLS = {
+  mudah:  [
+    qIdentify,
+    () => qSignCompare(false),
+    () => qAddSubSame(false),
+    () => qAddSubSame(true),
+    qEquivalent,
+    qFracToDec
+  ],
+  sedang: [
+    () => qSignCompare(true),
+    qEquivalent,
+    qSimplify,
+    () => qAddSubSame(false),
+    () => qAddSubSame(true),
+    qFracToDec,
+    qDecToFrac,
+    qIdentify
+  ],
+  sulit:  [
+    () => qAddSubDiff(false),
+    () => qAddSubDiff(true),
+    qMultiply,
+    qSimplify,
+    () => qSignCompare(true),
+    qFracToDec,
+    qDecToFrac
+  ]
+};
+
+/* =========================================================
+   SUARA
+   ========================================================= */
+let audioCtx = null;
+const state = {
+  level: 'mudah', score: 0, lives: 3, streak: 0,
+  correctCount: 0, qNum: 1, total: 10, current: null, locked: false
+};
+
+function tone(freq, dur, type = 'sine', vol = 0.12, delay = 0) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(vol, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  } catch (e) {}
+}
+const sndCorrect = () => { tone(660, .12); tone(880, .16, 'sine', .12, .09); };
+const sndWrong   = () => { tone(220, .18, 'triangle', .1); tone(160, .22, 'triangle', .1, .12); };
+const sndClick   = () => tone(520, .06, 'square', .05);
+const sndWin     = () => { [523, 659, 784, 1046].forEach((f, i) => tone(f, .22, 'sine', .12, i * .12)); };
+
+/* =========================================================
+   ALUR PERMAINAN
+   ========================================================= */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+  if (id === '#screen-materi') {
+    const body = document.querySelector('.materi-body');
+    if (body) body.scrollTop = 0;
+  }
+}
+
+function startGame(level) {
+  state.level = level;
+  state.score = 0;
+  state.lives = 3;
+  state.streak = 0;
+  state.correctCount = 0;
+  state.qNum = 1;
+  state.total = 10;
+  state.locked = false;
+  $('#qtotal').textContent = state.total;
+  showScreen('#screen-game');
+  nextQuestion();
+}
+
+function updateHUD() {
+  $('#score').textContent = state.score;
+  $('#lives').innerHTML = [0, 1, 2]
+    .map(i => `<span class="heart ${i < state.lives ? '' : 'off'}">❤️</span>`).join('');
+  $('#progress-fill').style.width = ((state.qNum - 1) / state.total * 100) + '%';
+}
+
+function nextQuestion() {
+  if (state.qNum > state.total || state.lives <= 0) { endGame(); return; }
+
+  state.locked = false;
+  $('#feedback').className = 'feedback';
+  $('#feedback').innerHTML = '';
+
+  const gen = pick(POOLS[state.level]);
+  state.current = gen();
+
+  $('#qnum').textContent = state.qNum;
+  $('#prompt').innerHTML = state.current.prompt;
+  $('#visual').innerHTML = state.current.visual || '';
+
+  const box = $('#options');
+  const opts = state.current.options;
+  box.className = 'options' + (opts.length === 3 ? ' opts-3' : '');
+  box.innerHTML = '';
+
+  opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'opt';
+    btn.innerHTML = o.html;
+    btn.addEventListener('click', () => answerQuestion(i, btn));
+    box.appendChild(btn);
+  });
+
+  updateHUD();
+}
+
+function answerQuestion(idx, btn) {
+  if (state.locked) return;
+  state.locked = true;
+
+  const q = state.current;
+  const isCorrect = q.options[idx].correct;
+
+  document.querySelectorAll('#options .opt').forEach((b, i) => {
+    b.classList.add('locked');
+    if (q.options[i].correct) b.classList.add('correct');
+  });
+
+  if (isCorrect) {
+    state.correctCount++;
+    state.streak++;
+    const bonus = state.streak >= 3 ? 5 : 0;
+    state.score += 10 + bonus;
+    sndCorrect();
+  } else {
+    state.streak = 0;
+    state.lives = Math.max(0, state.lives - 1);
+    btn.classList.add('wrong');
+    sndWrong();
+  }
+
+  updateHUD();
+  showFeedback(isCorrect, q.explain);
+}
+
+function showFeedback(ok, explain) {
+  const fb = $('#feedback');
+  fb.className = 'feedback show ' + (ok ? 'ok' : 'bad');
+
+  const lastQuestion = state.qNum >= state.total || state.lives <= 0;
+  const label = lastQuestion ? 'Lihat Hasil 🏁' : 'Lanjut ➜';
+
+  fb.innerHTML = `
+    <div class="fb-head">${ok ? '🎉 Hebat! Jawabanmu benar!' : '💡 Belum tepat, ayo pelajari!'}</div>
+    <div class="fb-body">${explain}</div>
+    <button class="btn-next" id="btn-next">${label}</button>
+  `;
+
+  $('#btn-next').addEventListener('click', () => {
+    sndClick();
+    state.qNum++;
+    nextQuestion();
+  });
+}
+
+function endGame() {
+  $('#progress-fill').style.width = '100%';
+  showScreen('#screen-end');
+
+  const pct = state.correctCount / state.total;
+  const stars = pct >= 0.9 ? 3 : pct >= 0.7 ? 2 : pct >= 0.5 ? 1 : 0;
+
+  $('#stars').innerHTML = [0, 1, 2]
+    .map(i => `<span class="star ${i < stars ? 'on' : ''}" style="animation-delay:${i * 0.18}s">⭐</span>`)
+    .join('');
+
+  $('#final-score').textContent = state.score;
+
+  let title, msg;
+  if (state.lives <= 0) {
+    title = 'Nyawa Habis! 💔';
+    msg = 'Jangan menyerah! Buka menu Materi Pecahan untuk belajar lagi, lalu coba kembali. 🌱';
+  } else if (stars === 3) {
+    title = 'Sempurna! 🏆';
+    msg = `Kamu menjawab ${state.correctCount} dari ${state.total} soal dengan benar. Kamu Master Pecahan!`;
+  } else if (stars === 2) {
+    title = 'Bagus Sekali! 🌟';
+    msg = `Kamu menjawab ${state.correctCount} dari ${state.total} soal dengan benar. Sedikit lagi sempurna!`;
+  } else if (stars === 1) {
+    title = 'Kerja Bagus! 👍';
+    msg = `Kamu menjawab ${state.correctCount} dari ${state.total} soal dengan benar. Ayo latihan lagi!`;
+  } else {
+    title = 'Tetap Semangat! 💪';
+    msg = `Kamu menjawab ${state.correctCount} dari ${state.total} soal. Pelajari menu Materi Pecahan dulu, ya!`;
+  }
+
+  $('#end-title').textContent = title;
+  $('#end-msg').textContent = msg;
+
+  if (stars >= 2) { sndWin(); confetti(); }
+  else if (stars === 1) { tone(600, .2); }
+}
+
+/* =========================================================
+   KONFETTI
+   ========================================================= */
+function confetti() {
+  const colors = ['#FF5FA2', '#FFC93C', '#2ED47A', '#3DA5FF', '#8B5CF6', '#FF8A3C'];
+  for (let i = 0; i < 70; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = pick(colors);
+    el.style.animationDelay = (Math.random() * 0.6) + 's';
+    el.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+    el.style.width = (7 + Math.random() * 8) + 'px';
+    el.style.height = (10 + Math.random() * 10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3600);
+  }
+}
+
+/* =========================================================
+   EVENT LISTENER
+   ========================================================= */
+document.querySelectorAll('.level-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    sndClick();
+    startGame(btn.dataset.level);
+  });
+});
+
+$('#btn-quit').addEventListener('click', () => { sndClick(); showScreen('#screen-start'); });
+$('#btn-again').addEventListener('click', () => { sndClick(); startGame(state.level); });
+$('#btn-menu').addEventListener('click', () => { sndClick(); showScreen('#screen-start'); });
+
+$('#btn-materi').addEventListener('click', () => { sndClick(); showScreen('#screen-materi'); });
+$('#btn-materi-back').addEventListener('click', () => { sndClick(); showScreen('#screen-start'); });
+$('#btn-materi-play').addEventListener('click', () => { sndClick(); showScreen('#screen-start'); });
+
+document.addEventListener('keydown', e => {
+  if ($('#screen-game').classList.contains('active')) {
+    if (e.key === 'Enter') {
+      const next = $('#btn-next');
+      if (next) next.click();
+      return;
+    }
+    if (!state.locked && /^[1-4]$/.test(e.key)) {
+      const btns = document.querySelectorAll('#options .opt');
+      const b = btns[parseInt(e.key, 10) - 1];
+      if (b) b.click();
+    }
+  }
+});
+
+buildMateriVisuals();
+</script>
+</body>
+</html>
